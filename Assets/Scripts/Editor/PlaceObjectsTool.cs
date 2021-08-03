@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEditor;
 using UnityEditor.EditorTools;
 using UnityEditor.UIElements;
@@ -33,12 +34,25 @@ public class PlaceObjectsTool : EditorTool
         SceneView.beforeSceneGui += BeforeSceneGUI;
         _toolRootElement = new VisualElement();
         _toolRootElement.style.width = 200;
+        _toolRootElement.style.backgroundColor = new StyleColor(new Color(0.21f, 0.21f, 0.21f, 0.8f));
+        _toolRootElement.style.marginLeft = 10f;
+        _toolRootElement.style.marginBottom = 10f;
+        _toolRootElement.style.paddingTop = 5f;
+        _toolRootElement.style.paddingRight = 5f;
+        _toolRootElement.style.paddingLeft = 5f;
+        _toolRootElement.style.paddingBottom = 5f;
         var titleLabel = new Label("Place Objects Tool");
+        titleLabel.style.unityTextAlign = TextAnchor.UpperCenter;
         _toolRootElement.Add(titleLabel);
 
         _prefabObjectField = new ObjectField {allowSceneObjects = true, objectType = typeof(GameObject)};
         _useCurrentSelection = new Toggle {label = "Use Current Selection"};
-        _useCurrentSelection.RegisterValueChangedCallback(evt => { _prefabObjectField.visible = !evt.newValue; });
+        /*
+        _useCurrentSelection.RegisterValueChangedCallback(evt =>
+        {
+            //_prefabObjectField.visible = !evt.newValue; 
+        });
+        */
 
         _toolRootElement.Add(_useCurrentSelection);
         _toolRootElement.Add(_prefabObjectField);
@@ -52,7 +66,7 @@ public class PlaceObjectsTool : EditorTool
         _toolRootElement?.RemoveFromHierarchy();
     }
 
-    public void BeforeSceneGUI(SceneView sceneView)
+    void BeforeSceneGUI(SceneView sceneView)
     {
         if (ToolManager.IsActiveTool(this))
         {
@@ -97,6 +111,11 @@ public class PlaceObjectsTool : EditorTool
             {
                 return;
             }
+            
+            if (_useCurrentSelection.value)
+            {
+                _prefabObjectField.value = Selection.activeGameObject;
+            }
 
             if (!_useCurrentSelection.value && _prefabObjectField?.value == null)
             {
@@ -130,6 +149,8 @@ public class PlaceObjectsTool : EditorTool
                 Undo.RegisterCreatedObjectUndo(newPrefabInstance, "Place new object");
                 _receivedClickUpEvent = false;
             }
+
+            window.Repaint();
         }
     }
 
