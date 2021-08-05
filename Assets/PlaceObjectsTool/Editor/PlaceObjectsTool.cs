@@ -12,7 +12,6 @@ public class PlaceObjectsTool : EditorTool
     GUIContent _iconContent;
 
     VisualElement _toolRootElement;
-    Toggle _useCurrentSelection;
     ObjectField _prefabObjectField;
 
     bool _receivedClickDownEvent;
@@ -47,11 +46,9 @@ public class PlaceObjectsTool : EditorTool
         var titleLabel = new Label("Place Objects Tool");
         titleLabel.style.unityTextAlign = TextAnchor.UpperCenter;
 
-        _prefabObjectField = new ObjectField {allowSceneObjects = true, objectType = typeof(GameObject)};
-        _useCurrentSelection = new Toggle {label = "Use Current Selection"};
+        _prefabObjectField = new ObjectField { allowSceneObjects = true, objectType = typeof(GameObject) };
 
         _toolRootElement.Add(titleLabel);
-        _toolRootElement.Add(_useCurrentSelection);
         _toolRootElement.Add(_prefabObjectField);
 
         var sv = SceneView.lastActiveSceneView;
@@ -69,19 +66,19 @@ public class PlaceObjectsTool : EditorTool
     {
         if (ToolManager.IsActiveTool(this))
         {
-            if (_useCurrentSelection.value && Selection.activeGameObject == null)
+            if (Event.current.type == EventType.MouseDown && Event.current.button == 1)
+            {
+                ShowMenu();
+                Event.current.Use();
+            }
+
+            if (_prefabObjectField?.value == null)
             {
                 _receivedClickDownEvent = false;
                 _receivedClickUpEvent = false;
                 return;
             }
 
-            if (!_useCurrentSelection.value && _prefabObjectField?.value == null)
-            {
-                _receivedClickDownEvent = false;
-                _receivedClickUpEvent = false;
-                return;
-            }
 
             if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
             {
@@ -106,33 +103,27 @@ public class PlaceObjectsTool : EditorTool
 
         if (ToolManager.IsActiveTool(this))
         {
-            if (_useCurrentSelection.value && Selection.activeGameObject == null)
-                return;
-
-            if (_useCurrentSelection.value)
-                _prefabObjectField.value = Selection.activeGameObject;
-
-            if (!_useCurrentSelection.value && _prefabObjectField?.value == null)
+            if (_prefabObjectField?.value == null)
                 return;
 
             Handles.DrawWireDisc(GetCurrentMousePositionInScene(), Vector3.up, 1f);
             if (_receivedClickUpEvent)
             {
-                var newObject = _useCurrentSelection.value ? Selection.activeGameObject : _prefabObjectField.value;
+                var newObject = _prefabObjectField.value;
 
                 PrefabUtility.IsPartOfPrefabInstance(newObject);
-                var newPrefabInstance = (GameObject) PrefabUtility.InstantiatePrefab(newObject);
+                var newPrefabInstance = (GameObject)PrefabUtility.InstantiatePrefab(newObject);
                 if (newPrefabInstance == null)
                 {
                     if (PrefabUtility.IsPartOfPrefabInstance(newObject))
                     {
                         var prefabPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(newObject);
                         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
-                        newPrefabInstance = (GameObject) PrefabUtility.InstantiatePrefab(prefab);
+                        newPrefabInstance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
                     }
                     else
                     {
-                        newPrefabInstance = Instantiate((GameObject) newObject);
+                        newPrefabInstance = Instantiate((GameObject)newObject);
                     }
                 }
 
@@ -152,5 +143,18 @@ public class PlaceObjectsTool : EditorTool
         Vector3 mousePosition = Event.current.mousePosition;
         var placeObject = HandleUtility.PlaceObject(mousePosition, out var newPosition, out var normal);
         return placeObject ? newPosition : HandleUtility.GUIPointToWorldRay(mousePosition).GetPoint(10);
+    }
+
+    void ShowMenu()
+    {
+        var picked = HandleUtility.PickGameObject(Event.current.mousePosition, true);
+        if (!picked) return;
+        
+        var menu = new GenericMenu();
+        menu.AddItem(new GUIContent($"Pick {picked.name}"), false, () =>
+        {
+            _prefabObjectField.value = picked;
+        });
+        menu.ShowAsContext();
     }
 }
