@@ -1,4 +1,3 @@
-using Unity.VisualScripting;
 using UnityEditor;
 using UnityEditor.EditorTools;
 using UnityEditor.UIElements;
@@ -30,11 +29,15 @@ public class PlaceObjectsTool : EditorTool
             tooltip = "Place Objects Tool"
         };
 
-        var sv = SceneView.lastActiveSceneView;
         SceneView.beforeSceneGui += BeforeSceneGUI;
+
+        //Create the UI
         _toolRootElement = new VisualElement();
         _toolRootElement.style.width = 200;
-        _toolRootElement.style.backgroundColor = new StyleColor(new Color(0.21f, 0.21f, 0.21f, 0.8f));
+        var backgroundColor = EditorGUIUtility.isProSkin
+            ? new Color(0.21f, 0.21f, 0.21f, 0.8f)
+            : new Color(0.8f, 0.8f, 0.8f, 0.8f);
+        _toolRootElement.style.backgroundColor = backgroundColor;
         _toolRootElement.style.marginLeft = 10f;
         _toolRootElement.style.marginBottom = 10f;
         _toolRootElement.style.paddingTop = 5f;
@@ -43,19 +46,15 @@ public class PlaceObjectsTool : EditorTool
         _toolRootElement.style.paddingBottom = 5f;
         var titleLabel = new Label("Place Objects Tool");
         titleLabel.style.unityTextAlign = TextAnchor.UpperCenter;
-        _toolRootElement.Add(titleLabel);
 
         _prefabObjectField = new ObjectField {allowSceneObjects = true, objectType = typeof(GameObject)};
         _useCurrentSelection = new Toggle {label = "Use Current Selection"};
-        /*
-        _useCurrentSelection.RegisterValueChangedCallback(evt =>
-        {
-            //_prefabObjectField.visible = !evt.newValue; 
-        });
-        */
 
+        _toolRootElement.Add(titleLabel);
         _toolRootElement.Add(_useCurrentSelection);
         _toolRootElement.Add(_prefabObjectField);
+
+        var sv = SceneView.lastActiveSceneView;
         sv.rootVisualElement.Add(_toolRootElement);
         sv.rootVisualElement.style.flexDirection = FlexDirection.ColumnReverse;
     }
@@ -101,26 +100,20 @@ public class PlaceObjectsTool : EditorTool
 
     public override void OnToolGUI(EditorWindow window)
     {
-        if (!(window is SceneView sceneView))
+        if (!(window is SceneView))
             return;
 
 
         if (ToolManager.IsActiveTool(this))
         {
             if (_useCurrentSelection.value && Selection.activeGameObject == null)
-            {
                 return;
-            }
-            
+
             if (_useCurrentSelection.value)
-            {
                 _prefabObjectField.value = Selection.activeGameObject;
-            }
 
             if (!_useCurrentSelection.value && _prefabObjectField?.value == null)
-            {
                 return;
-            }
 
             Handles.DrawWireDisc(GetCurrentMousePositionInScene(), Vector3.up, 1f);
             if (_receivedClickUpEvent)
