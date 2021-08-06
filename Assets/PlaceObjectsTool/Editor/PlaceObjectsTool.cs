@@ -17,6 +17,8 @@ public class PlaceObjectsTool : EditorTool
     bool _receivedClickDownEvent;
     bool _receivedClickUpEvent;
 
+    bool HasPlaceableObject => _prefabObjectField?.value != null;
+
     public override GUIContent toolbarIcon => _iconContent;
 
     public override void OnActivated()
@@ -64,22 +66,22 @@ public class PlaceObjectsTool : EditorTool
 
     void BeforeSceneGUI(SceneView sceneView)
     {
-        if (ToolManager.IsActiveTool(this))
+        if (!ToolManager.IsActiveTool(this))
+            return;
+
+        if (Event.current.type == EventType.MouseDown && Event.current.button == 1)
         {
-            if (Event.current.type == EventType.MouseDown && Event.current.button == 1)
-            {
-                ShowMenu();
-                Event.current.Use();
-            }
+            ShowMenu();
+            Event.current.Use();
+        }
 
-            if (_prefabObjectField?.value == null)
-            {
-                _receivedClickDownEvent = false;
-                _receivedClickUpEvent = false;
-                return;
-            }
-
-
+        if (!HasPlaceableObject)
+        {
+            _receivedClickDownEvent = false;
+            _receivedClickUpEvent = false;
+        }
+        else
+        {
             if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
             {
                 _receivedClickDownEvent = true;
@@ -100,42 +102,41 @@ public class PlaceObjectsTool : EditorTool
         if (!(window is SceneView))
             return;
 
+        if (!ToolManager.IsActiveTool(this))
+            return;
 
-        if (ToolManager.IsActiveTool(this))
+        if (!HasPlaceableObject)
+            return;
+
+        Handles.DrawWireDisc(GetCurrentMousePositionInScene(), Vector3.up, 1f);
+        if (_receivedClickUpEvent)
         {
-            if (_prefabObjectField?.value == null)
-                return;
+            var newObject = _prefabObjectField.value;
 
-            Handles.DrawWireDisc(GetCurrentMousePositionInScene(), Vector3.up, 1f);
-            if (_receivedClickUpEvent)
+            PrefabUtility.IsPartOfPrefabInstance(newObject);
+            var newPrefabInstance = (GameObject)PrefabUtility.InstantiatePrefab(newObject);
+            if (newPrefabInstance == null)
             {
-                var newObject = _prefabObjectField.value;
-
-                PrefabUtility.IsPartOfPrefabInstance(newObject);
-                var newPrefabInstance = (GameObject)PrefabUtility.InstantiatePrefab(newObject);
-                if (newPrefabInstance == null)
+                if (PrefabUtility.IsPartOfPrefabInstance(newObject))
                 {
-                    if (PrefabUtility.IsPartOfPrefabInstance(newObject))
-                    {
-                        var prefabPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(newObject);
-                        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
-                        newPrefabInstance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
-                    }
-                    else
-                    {
-                        newPrefabInstance = Instantiate((GameObject)newObject);
-                    }
+                    var prefabPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(newObject);
+                    var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+                    newPrefabInstance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
                 }
-
-                newPrefabInstance.transform.position = GetCurrentMousePositionInScene();
-
-                Event.current.Use();
-                Undo.RegisterCreatedObjectUndo(newPrefabInstance, "Place new object");
-                _receivedClickUpEvent = false;
+                else
+                {
+                    newPrefabInstance = Instantiate((GameObject)newObject);
+                }
             }
 
-            window.Repaint();
+            newPrefabInstance.transform.position = GetCurrentMousePositionInScene();
+
+            Event.current.Use();
+            Undo.RegisterCreatedObjectUndo(newPrefabInstance, "Place new object");
+            _receivedClickUpEvent = false;
         }
+
+        window.Repaint();
     }
 
     Vector3 GetCurrentMousePositionInScene()
@@ -149,12 +150,9 @@ public class PlaceObjectsTool : EditorTool
     {
         var picked = HandleUtility.PickGameObject(Event.current.mousePosition, true);
         if (!picked) return;
-        
+
         var menu = new GenericMenu();
-        menu.AddItem(new GUIContent($"Pick {picked.name}"), false, () =>
-        {
-            _prefabObjectField.value = picked;
-        });
+        menu.AddItem(new GUIContent($"Pick {picked.name}"), false, () => { _prefabObjectField.value = picked; });
         menu.ShowAsContext();
     }
 }
