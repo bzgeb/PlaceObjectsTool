@@ -99,6 +99,7 @@ public class PlaceObjectsTool : EditorTool
 
     public override void OnToolGUI(EditorWindow window)
     {
+        //If we're not in the scene view, we're not the active tool, we don't have a placeable object, exit.
         if (!(window is SceneView))
             return;
 
@@ -108,7 +109,10 @@ public class PlaceObjectsTool : EditorTool
         if (!HasPlaceableObject)
             return;
 
+        //Draw a positional Handle.
         Handles.DrawWireDisc(GetCurrentMousePositionInScene(), Vector3.up, 1f);
+        
+        //If the user clicked, clone the selected object, place it at the current mouse position.
         if (_receivedClickUpEvent)
         {
             var newObject = _prefabObjectField.value;
@@ -136,6 +140,7 @@ public class PlaceObjectsTool : EditorTool
             _receivedClickUpEvent = false;
         }
 
+        //Force the window to repaint.
         window.Repaint();
     }
 
