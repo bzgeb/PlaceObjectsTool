@@ -110,33 +110,29 @@ public class PlaceObjectsTool : EditorTool
             return;
 
         //Draw a positional Handle.
-        Handles.DrawWireDisc(GetCurrentMousePositionInScene(), Vector3.up, 1f);
-        
+        Handles.DrawWireDisc(GetCurrentMousePositionInScene(), Vector3.up, 0.5f);
+
         //If the user clicked, clone the selected object, place it at the current mouse position.
         if (_receivedClickUpEvent)
         {
             var newObject = _prefabObjectField.value;
 
-            PrefabUtility.IsPartOfPrefabInstance(newObject);
-            var newPrefabInstance = (GameObject)PrefabUtility.InstantiatePrefab(newObject);
-            if (newPrefabInstance == null)
+            GameObject newObjectInstance;
+            if (PrefabUtility.IsPartOfAnyPrefab(newObject))
             {
-                if (PrefabUtility.IsPartOfPrefabInstance(newObject))
-                {
-                    var prefabPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(newObject);
-                    var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
-                    newPrefabInstance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
-                }
-                else
-                {
-                    newPrefabInstance = Instantiate((GameObject)newObject);
-                }
+                var prefabPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(newObject);
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+                newObjectInstance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
             }
+            else
+            {
+                newObjectInstance = Instantiate((GameObject)newObject);
+            }
+            newObjectInstance.transform.position = GetCurrentMousePositionInScene();
 
-            newPrefabInstance.transform.position = GetCurrentMousePositionInScene();
-
+            Undo.RegisterCreatedObjectUndo(newObjectInstance, "Place new object");
+            
             Event.current.Use();
-            Undo.RegisterCreatedObjectUndo(newPrefabInstance, "Place new object");
             _receivedClickUpEvent = false;
         }
 
