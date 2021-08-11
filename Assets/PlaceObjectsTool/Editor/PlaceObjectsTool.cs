@@ -7,9 +7,14 @@ using UnityEngine.UIElements;
 [EditorTool("Place Objects Tool")]
 public class PlaceObjectsTool : EditorTool
 {
-    Texture2D _toolIcon;
+    static Texture2D _toolIcon;
 
-    GUIContent _iconContent;
+    readonly GUIContent _iconContent = new GUIContent
+    {
+        image = _toolIcon,
+        text = "Place Objects Tool",
+        tooltip = "Place Objects Tool"
+    };
 
     VisualElement _toolRootElement;
     ObjectField _prefabObjectField;
@@ -23,13 +28,6 @@ public class PlaceObjectsTool : EditorTool
 
     public override void OnActivated()
     {
-        _iconContent = new GUIContent
-        {
-            image = _toolIcon,
-            text = "Place Objects Tool",
-            tooltip = "Place Objects Tool"
-        };
-
         SceneView.beforeSceneGui += BeforeSceneGUI;
 
         //Create the UI
@@ -128,10 +126,11 @@ public class PlaceObjectsTool : EditorTool
             {
                 newObjectInstance = Instantiate((GameObject)newObject);
             }
+
             newObjectInstance.transform.position = GetCurrentMousePositionInScene();
 
             Undo.RegisterCreatedObjectUndo(newObjectInstance, "Place new object");
-            
+
             Event.current.Use();
             _receivedClickUpEvent = false;
         }
