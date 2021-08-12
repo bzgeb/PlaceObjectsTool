@@ -28,8 +28,6 @@ public class PlaceObjectsTool : EditorTool
 
     public override void OnActivated()
     {
-        SceneView.beforeSceneGui += BeforeSceneGUI;
-
         //Create the UI
         _toolRootElement = new VisualElement();
         _toolRootElement.style.width = 200;
@@ -54,12 +52,14 @@ public class PlaceObjectsTool : EditorTool
         var sv = SceneView.lastActiveSceneView;
         sv.rootVisualElement.Add(_toolRootElement);
         sv.rootVisualElement.style.flexDirection = FlexDirection.ColumnReverse;
+        
+        SceneView.beforeSceneGui += BeforeSceneGUI;
     }
 
     public override void OnWillBeDeactivated()
     {
-        SceneView.beforeSceneGui -= BeforeSceneGUI;
         _toolRootElement?.RemoveFromHierarchy();
+        SceneView.beforeSceneGui -= BeforeSceneGUI;
     }
 
     void BeforeSceneGUI(SceneView sceneView)
@@ -131,7 +131,6 @@ public class PlaceObjectsTool : EditorTool
 
             Undo.RegisterCreatedObjectUndo(newObjectInstance, "Place new object");
 
-            Event.current.Use();
             _receivedClickUpEvent = false;
         }
 
